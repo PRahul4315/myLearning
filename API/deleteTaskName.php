@@ -9,10 +9,12 @@ $result = '';
 $que = $con->query("delete from taskname where id = ".$data['id']);
 
 if($que){
-    echo json_encode(["Success" => true, "status" => 200, "Message" => "Data Deleted Successfully"]);
+    $que = $con->query("delete from taskdetail where taskid = ".$data['id']);
+    if ($que) {
+        echo json_encode(["Success" => true, "status" => 200, "Message" => "Data Deleted Successfully"]);
+    }
 }else{
     echo json_encode(["Success" => false, "status" => 500, "Message" => "Data Deleted Failed"]);
 }
-
 
 ?>

@@ -5,6 +5,9 @@ headStart();
 <script>
   var tableHead = document.getElementById("tableHead");
   var tableRow = document.getElementById("tableRow");
+  let taskCounter = 0;
+  let TaskCreatedDate = new Date();
+  // let TaskCreatedDate = new Date("2025-10-07");
 
   app.controller("taskCtrl", function($scope, $rootScope, $http, $filter) {
 
@@ -14,7 +17,17 @@ headStart();
     $rootScope.getTasks = function() {
 
       $http.get("../API/getTaskName.php").then(function(response) {
-        $rootScope.tasks = response.data;
+
+        if (response.data.length != 0) {
+          $rootScope.tasks = response.data;
+          TaskCreatedDate = new Date($rootScope.tasks[0].createdon);
+          // console.log("createdDate", $rootScope.tasks[0].createdon);
+          // console.log(TaskCreatedDate);
+           
+        }else{
+          $rootScope.tasks = response.data;
+        }
+
         // console.log($rootScope.tasks);
       }, function(error) {
         console.error("Error fetching tasks:", error);
@@ -23,26 +36,30 @@ headStart();
     }
 
     $rootScope.getTaskCheck = function() {
-
       $http.get("../API/getTaskCheck.php").then(function(response) {
-        // $rootScope.tasksCheck = response.data;
-        console.log(response.data);
+        $rootScope.tasksCheck = response.data.map(item => ({
+          ...item,
+          // Convert MySQL datetime string -> JS Date in same format
+          date: new Date(item.date.split(" ")[0] + "T00:00:00.000Z"),
+          checked: item.checked === true || item.checked === 1
+        }));
+        // console.log($rootScope.tasksCheck);
       }, function(error) {
         console.error("Error fetching tasks:", error);
       });
+    };
 
-    }
 
-    $rootScope.validateTaskCheckBox = function(task,date) {
+    $rootScope.validateTaskCheckBox = function(task, date) {
       if (task.checked) {
 
         // $rootScope.tasksCheck.push(task);
 
-         $rootScope.tasksCheck.push({
-            id: task.id,
-            task: task.task, // or task.task depending on your object
-            date: new Date($filter('date')(date, 'yyyy-MM-dd')),
-            checked: true
+        $rootScope.tasksCheck.push({
+          id: task.id,
+          task: task.task, // or task.task depending on your object
+          date: new Date($filter('date')(date, 'yyyy-MM-dd')),
+          checked: true
         });
 
       } else {
@@ -50,7 +67,9 @@ headStart();
       }
     }
 
-    $rootScope.showChecked = function(id) {
+
+
+    $rootScope.AddTaskChecked = function(id) {
 
       $rootScope.FiltertasksCheck = $rootScope.tasksCheck.filter(t => $filter('date')(t.date, 'yyyy-MM-dd') === $filter('date')(id, 'yyyy-MM-dd'));
       console.log($rootScope.FiltertasksCheck);
@@ -71,9 +90,18 @@ headStart();
         .catch(function(error) {
           console.error("Error saving data:", error);
         });
-      
 
     }
+
+    $scope.isTaskChecked = function(taskId, date) {
+      const formattedDate = $filter('date')(date, 'yyyy-MM-dd');
+      return $rootScope.tasksCheck.some(item =>
+        item.id == taskId &&
+        $filter('date')(item.date, 'yyyy-MM-dd') === formattedDate &&
+        item.checked
+      );
+    };
+
 
     $scope.getDateKey = function(d) {
       return $filter('date')(d, 'yyyy-MM-dd');
@@ -81,6 +109,13 @@ headStart();
 
 
     $scope.AddTaskModal = function() {
+      taskCounter = 1;
+      $rootScope.AddTask = [];
+      $rootScope.AddTask.push({
+        id: taskCounter,
+        task: ""
+      });
+
       $("#AddModalId").modal("show");
     }
 
@@ -98,13 +133,7 @@ headStart();
 
   app.controller("AddTaskCtrl", function($scope, $rootScope, $http) {
 
-    // var date = new Date();
-    // $scope.currentDate = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate();
-
-    // console.log(date);
-    // console.log($scope.currentDate);
-
-    $rootScope.startDate = new Date("2025-10-07");
+    $rootScope.startDate = TaskCreatedDate;
     $rootScope.today = new Date();
     $rootScope.current = new Date($rootScope.startDate);
     $rootScope.dates = [];
@@ -119,12 +148,10 @@ headStart();
     $rootScope.tasks = [];
     $rootScope.AddTask = [];
     $rootScope.EditBtn = true;
-    let taskCounter = 0;
+
 
     $rootScope.AddTaskFunction = function() {
-      taskCounter = 0;
       taskCounter++;
-      $rootScope.AddTask = [];
       $rootScope.AddTask.push({
         id: taskCounter,
         task: ""
@@ -226,7 +253,7 @@ headStart();
                 id: task
               })
               .then(function(response) {
-                // console.log("Data saved successfully:", response.data);
+                // console.log("Deleted Data successfully:", response);
                 if (response.data.Success) {
                   $rootScope.getTasks();
                   Swal.fire({
@@ -269,42 +296,46 @@ contentWrapperStart();
 
 <div ng-controller="taskCtrl">
 
-  <hr class="my-5" />
-
   <div class="card">
     <div class=" d-flex align-items-center justify-content-between ">
 
       <h5 class="card-header">Task Table</h5>
-      <button type="button" ng-click="EditTaskModal()" class=" me-4 btn btn-warning">Edit Task</button>
+      <span class="d-flex align-items-center justify-content-center">
+        <button type="button" ng-click="EditTaskModal()" class=" me-4 btn btn-warning"><i class="fa-solid fa-pen-to-square"></i> Edit Task</button>
 
-      <button type="button" ng-click="AddTaskModal()" class=" me-4 btn btn-info"><i class="fa-solid fa-plus "></i> Add Task</button>
-
+        <button type="button" ng-click="AddTaskModal()" class=" me-4 btn btn-info"><i class="fa-solid fa-plus "></i> Add Task</button>
+      </span>
     </div>
     <div class="table-responsive text-nowrap">
       <table class="table">
         <thead class="table-dark">
           <tr id="tableHead">
 
-            <th style="color:rgb(184,184,184);">Today's Date</th>
+            <th style="color:rgb(184,184,184);text-align:center;" ng-style="tasks.length > 0 ? {'display':'none'} : {}"></th>
+            <th style="color:rgb(184,184,184);" ng-style="tasks.length == 0 ? {'display':'none'} : {}"> Date'S </th>
             <th style="color:rgb(184,184,184);" ng-repeat=" t in tasks">{{t.task}}</th>
-            <th style="color:rgb(184,184,184);">Save</th>
+            <th style="color:rgb(184,184,184);" ng-style="tasks.length == 0 ? {'display':'none'} : {}">Save</th>
 
           </tr>
         </thead>
         <tbody class="table-border-bottom-0">
 
-
-
-          <tr ng-repeat="d in dates" id="tableRow">
-            <td>{{d | date:'yyyy-MM-dd'}}</td>
+          <tr ng-repeat="d in dates" id="tableRow" ng-style="tasks.length == 0 ? {'height': '70px'} : {}">
+            <td style="text-align:center;" ng-style="tasks.length > 0 ? {'display':'none'} : {}">Please Add Some Task</td>
+            <td ng-style="tasks.length == 0 ? {'display':'none'} : {}">{{d | date:'yyyy-MM-dd'}}</td>
             <td ng-repeat="t in tasks">
               <div class="form-check">
-                <input class="form-check-input " type="checkbox" value="{{t.id}}" ng-attr-id="{{ (d | date:'yyyy-MM-dd') + '_' + t.id }}" ng-model="t.checked[getDateKey(d)]"
+                <input class="form-check-input"
+                  type="checkbox" value="{{t.id}}"
+                  ng-attr-id="{{ (d | date:'yyyy-MM-dd') + '_' + t.id }}"
+                  ng-model="t.checked[getDateKey(d)]"
+                  ng-checked="isTaskChecked(t.id, d)"
                   ng-change="validateTaskCheckBox(t,d)" />
-                <label class="form-check-label cursor-pointer" ng-attr-for="{{ (d | date:'yyyy-MM-dd') + '_' + t.id }}"> Checked </label>
+                <label class="form-check-label cursor-pointer"
+                  ng-attr-for="{{ (d | date:'yyyy-MM-dd') + '_' + t.id }}" >Checked</label>
               </div>
             </td>
-            <td><button type="button" ng-click="showChecked(d)" class=" me-4 btn rounded-pill btn-icon btn-warning"><i class="fa-solid fa-download"></i></button></td>
+            <td ng-style="tasks.length == 0 ? {'display':'none'} : {}" ><button type="button" ng-click="AddTaskChecked(d)" class=" me-4 btn rounded-pill btn-icon btn-warning text-black"><i class="fa-solid fa-check"></i></button></td>
           </tr>
 
 
