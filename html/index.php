@@ -40,6 +40,11 @@ switch ($request) {
         require __DIR__. '/myDashboard.php';
         break;
 
+    case $docBasePath:
+        case $docBasePath . 'Rough': 
+        require __DIR__. '/rough.php';
+        break;
+
      default:
         echo "<h1>404 - Page Not Found</h1>";
         break;
