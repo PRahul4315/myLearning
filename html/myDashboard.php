@@ -5,11 +5,7 @@ headStart();
 <script>
     app.controller("dashCtrl", function($scope) {
 
-        $scope.callModal = function() {
-            console.log("calling modal...");
-
-            $("#modalId").modal("show");
-        }
+  
 
     });
 </script>
@@ -51,15 +47,6 @@ contentWrapperStart();
 
 
 </div>
-    <?php
-    ModalStart("modalId", "Dashboard Page Modal is Visible", "", "", "newCtrl", "modal-lg");
-    ?>
-
-    <h1>Hello Modal</h1>
-
-    <?php
-    ModalEnd( "", "", "",false);
-    ?>
 <?php
 contentWrapperEnd();
 layoutPageContainerEnd();
