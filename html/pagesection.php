@@ -67,11 +67,16 @@ function headStart()
         <!--! Template customizer & Theme config files MUST be included after core stylesheets and helpers.js in the <head> section -->
         <!--? Config:  Mandatory theme config file contain global vars & default theme options, Set your preferred theme option in this file.  -->
         <script src="../assets/js/config.js"></script>
+
+        <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
         <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+
 
         <script>
             var app = angular.module("myApp", []);
             app.controller("myCtrl", function($scope) {
+
+                // $scope.
                 
                 console.log("url");
                 
@@ -232,7 +237,9 @@ function bodyStart()
                                         type="text"
                                         class="form-control border-0 shadow-none"
                                         placeholder="Search..."
-                                        aria-label="Search..." />
+                                        aria-label="Search..."
+                        
+                                         />
                                 </div>
                             </div>
                             <!-- /Search -->

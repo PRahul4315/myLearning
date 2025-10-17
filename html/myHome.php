@@ -7,6 +7,7 @@ headStart();
   var tableRow = document.getElementById("tableRow");
   let taskCounter = 0;
   let TaskCreatedDate = new Date();
+
   // let TaskCreatedDate = new Date("2025-10-07");
 
   app.controller("taskCtrl", function($scope, $rootScope, $http, $filter) {
@@ -20,15 +21,13 @@ headStart();
 
         if (response.data.length != 0) {
           $rootScope.tasks = response.data;
-          TaskCreatedDate = new Date($rootScope.tasks[0].createdon);
-          // console.log("createdDate", $rootScope.tasks[0].createdon);
-          // console.log(TaskCreatedDate);
+
+          $rootScope.TaskCreatedDate = new Date($rootScope.tasks[0].createdon);
            
         }else{
           $rootScope.tasks = response.data;
         }
 
-        // console.log($rootScope.tasks);
       }, function(error) {
         console.error("Error fetching tasks:", error);
       });
@@ -37,13 +36,15 @@ headStart();
 
     $rootScope.getTaskCheck = function() {
       $http.get("../API/getTaskCheck.php").then(function(response) {
+
+          console.log(response);
+
         $rootScope.tasksCheck = response.data.map(item => ({
           ...item,
-          // Convert MySQL datetime string -> JS Date in same format
           date: new Date(item.date.split(" ")[0] + "T00:00:00.000Z"),
           checked: item.checked === true || item.checked === 1
         }));
-        // console.log($rootScope.tasksCheck);
+        
       }, function(error) {
         console.error("Error fetching tasks:", error);
       });
@@ -133,22 +134,25 @@ headStart();
 
   app.controller("AddTaskCtrl", function($scope, $rootScope, $http) {
 
-    $rootScope.startDate = TaskCreatedDate;
-    $rootScope.today = new Date();
-    $rootScope.current = new Date($rootScope.startDate);
-    $rootScope.dates = [];
-
-
-
-    while ($rootScope.current <= $rootScope.today) {
-      $scope.dates.push(new Date($rootScope.current));
-      $rootScope.current.setDate($rootScope.current.getDate() + 1);
-    }
-
     $rootScope.tasks = [];
     $rootScope.AddTask = [];
     $rootScope.EditBtn = true;
+    $rootScope.dates = [];
 
+    // ✅ Watch for TaskCreatedDate and initialize when ready
+    $rootScope.$watch('TaskCreatedDate', function (newVal) {
+      if (newVal) {
+        $rootScope.startDate = new Date(newVal);
+        $rootScope.today = new Date();
+        $rootScope.current = new Date($rootScope.startDate);
+        $rootScope.dates = [];
+
+        while ($rootScope.current <= $rootScope.today) {
+          $rootScope.dates.push(new Date($rootScope.current));
+          $rootScope.current.setDate($rootScope.current.getDate() + 1);
+        }
+      }
+    });
 
     $rootScope.AddTaskFunction = function() {
       taskCounter++;
@@ -160,11 +164,11 @@ headStart();
     };
 
     $scope.RemoveTaskFunction = function(id) {
-      console.log(id);
-      console.log($rootScope.tasks);
-
+      // console.log(id);
+      // console.log($rootScope.tasks);
 
       $rootScope.AddTask = $rootScope.AddTask.filter(t => t.id !== id);
+
     };
 
     $rootScope.saveTaskFunction = function(opr) {
@@ -236,6 +240,8 @@ headStart();
 
     $rootScope.RemoveEditTaskFunction = function(task) {
 
+
+
       if (task) {
         $("#EditModalId").modal("hide");
         Swal.fire({
@@ -255,6 +261,10 @@ headStart();
               .then(function(response) {
                 // console.log("Deleted Data successfully:", response);
                 if (response.data.Success) {
+                  if ($rootScope.tasks.length == 0) {
+                      // $rootScope.dates = [];
+                      // $rootScope.dates.push(new Date());
+                  }
                   $rootScope.getTasks();
                   Swal.fire({
                     title: "Data Deleted Successfully",
@@ -269,11 +279,6 @@ headStart();
 
             $rootScope.EditTask = $rootScope.EditTask.filter(t => t.id !== task);
 
-            Swal.fire(
-              'Deleted!',
-              'Your file has been deleted.',
-              'success'
-            )
           }
         })
 
@@ -282,6 +287,8 @@ headStart();
 
   });
 </script>
+
+
 <?php
 headEnd();
 bodyStart();
@@ -320,8 +327,12 @@ contentWrapperStart();
         </thead>
         <tbody class="table-border-bottom-0">
 
-          <tr ng-repeat="d in dates" id="tableRow" ng-style="tasks.length == 0 ? {'height': '70px'} : {}">
+        <tr ng-style="tasks.length == 0 ? {'height': '70px'} : {'display':'none'}">
             <td style="text-align:center;" ng-style="tasks.length > 0 ? {'display':'none'} : {}">Please Add Some Task</td>
+        </tr>
+
+          <tr ng-repeat="d in dates" id="tableRow" ng-style="tasks.length == 0 ? {'display':'none'} : {}">
+            <!-- <td style="text-align:center;" ng-style="tasks.length > 0 ? {'display':'none'} : {}">Please Add Some Task</td> -->
             <td ng-style="tasks.length == 0 ? {'display':'none'} : {}">{{d | date:'yyyy-MM-dd'}}</td>
             <td ng-repeat="t in tasks">
               <div class="form-check">
